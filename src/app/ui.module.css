@@ -1,0 +1,274 @@
+.dropdownSelect {
+    display: inline-block;
+    position: relative;
+    white-space: nowrap;
+    z-index: 1;
+}
+
+.dropdownSelect .btn {
+    display: inline-block;
+    position: relative;
+    background-color: rgba(0 18 21 / 20%);
+    border-radius: 12px;
+    padding: 7px 10px;
+    font-size: 17px;
+    font-weight: 100;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: 250ms linear background;
+}
+
+.dropdownSelect .btn .icon {
+    content: ' ';
+    width: 25px;
+    height: 25px;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+}
+
+.dropdownSelect:not(.open) .btn:hover {
+    background-color: rgba(0 18 21 / 30%);
+}
+
+.dropdownSelect .btn .arrow {
+    transition: 150ms linear;
+}
+
+.dropdownSelect .dropdown {
+    display: none;
+    position: absolute;
+    border-radius: 12px;
+    font-weight: 100;
+    font-size: 17px;
+    overflow: hidden;
+    box-shadow: 1px 3px 10px #00000059;
+    margin-top: 7px;
+    backdrop-filter: blur(5px);
+}
+
+.dropdownSelect.open .dropdown {
+    display: block;
+}
+
+.dropdownSelect .dropdown > * {
+    background-color: rgba(0 18 21 / 25%);
+    padding: 7px 15px;
+    transition: 250ms linear background;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.dropdownSelect .dropdown > *.selected {
+    background-color: rgba(0 18 21 / 40%);
+}
+
+.dropdownSelect .dropdown > * .icon {
+    content: ' ';
+    width: 25px;
+    height: 25px;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+}
+
+.dropdownSelect .dropdown > *:not(.disabled):hover {
+    background-color: rgba(0 18 21 / 40%);
+    cursor: pointer;
+}
+
+.dropdownSelect.open {
+}
+
+.dropdownSelect.open .btn {
+    background-color: rgba(0 18 21 / 40%);
+}
+
+.dropdownSelect.open .btn .arrow {
+    transition: 250ms linear;
+    transform: rotate(180deg);
+}
+
+.scheduleBlock {
+    margin-top: 30px;
+}
+
+.scheduleBlock .date {
+    text-align: center;
+    font-family: unset;
+    font-size: 24px;
+    font-weight: 100;
+    color: rgba(255 255 255 / 80%);
+}
+
+.innerButton {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    align-content: center;
+    flex-wrap: nowrap;
+    background-color: rgb(0 18 21);
+    border: 2px solid rgba(255 255 255 / 30%);
+    border-radius: 5px;
+    min-height: 60px;
+    padding: 0px 15px;
+    cursor: default;
+    transition: 250ms linear;
+}
+
+/* .innerButton:not(:first-child):not(:last-child) {
+    margin: 20px 0px;
+} */
+
+.innerButton .logo {
+    display: block;
+    width: 40px;
+    height: 45px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.innerButton > * {
+    display: inline-flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.innerButton > *:first-child, .innerButton > *:last-child {
+    width: 50px;
+    transition: 250ms linear;
+}
+
+.innerButton > *:first-child svg {
+    font-size: 40px;
+}
+
+.innerButton .hide {
+    display: none;
+}
+
+.innerButton > *:last-child {
+    justify-content: flex-end;
+    opacity: 0.3;
+}
+
+.innerButton > *:nth-child(2) {
+    flex-grow: 1;
+    position: relative;
+    width: fit-content;
+    overflow-x: clip;
+    white-space: nowrap;
+}
+
+.innerButton:hover {
+    background-color: rgb(0 44 51);
+    border-color: rgba(255 255 255 / 60%);
+    cursor: pointer;
+}
+
+.innerButton:hover > *:last-child {
+    opacity: 0.7;
+}
+
+.innerButton.warning {
+    border-color: rgba(255 153 0 / 30%);
+}
+
+.innerButton.warning > *:first-child svg, .innerButton.warning > *:last-child, .innerButton.warning > *:nth-child(2) {
+    color: rgb(255 153 0);
+}
+
+.innerButton.warning:hover {
+    background-color: rgb(86 52 0);
+    border-color: rgba(255 153 0 / 30%);
+}
+
+.innerButton.success {
+    background-color: unset;
+    border-color: rgba(112 255 0 / 40%);
+}
+
+.innerButton.success > *:first-child {
+    opacity: 0.7;
+}
+
+.innerButton.success > *:first-child svg, .innerButton.success > *:last-child {
+    color: rgb(112 255 0);
+}
+
+.innerButton.success > *:nth-child(2) {
+    color: rgba(112 255 0 / 70%);
+}
+
+.innerButton.success:hover {
+    background-color: rgba(112 255 0 / 10%);
+}
+
+/** Subscription */
+
+.innerButton.subscription {
+    background-color: unset;
+    border-color: rgb(170 118 136);
+}
+
+.innerButton.subscription > *:first-child {
+    opacity: 0.7;
+}
+
+.innerButton.subscription > *:first-child svg, .innerButton.subscription > *:last-child, .innerButton.subscription > *:nth-child(2) {
+    color: rgb(170 118 136);
+}
+
+.innerButton.subscription:hover {
+    background-color: rgba(170 118 136 / 10%);
+}
+
+/** Cancellation */
+
+.innerButton.cancellation {
+    background-color: unset;
+    border-color: rgb(255 73 0 / 30%);
+}
+
+.innerButton.cancellation > *:first-child {
+    opacity: 0.7;
+}
+
+.innerButton.cancellation > *:first-child svg, .innerButton.cancellation > *:last-child, .innerButton.cancellation > *:nth-child(2) {
+    color: rgb(255 73 0);
+}
+
+.innerButton.cancellation:hover {
+    background-color: rgb(255 73 0 / 10%);
+}
+
+/** Other components */
+
+.innerButton .amount {
+    font-size: 20px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow-x: hidden;
+    max-width: 350px;
+}
+
+.innerButton .amount > span {
+    font-size: 16px;
+}
+
+.innerButton .amount > span::before {
+    content: ' ';
+    display: inline-block;
+    border-left: 2px solid #ffffff59;
+    height: 15px;
+    margin: 0px 6px;
+}
+
+.innerButton .address {
+    display: flex;
+    align-items: center;
+    font-size: 15px;
+    color: rgba(255 255 255 / 30%);
+    margin-top: -3px;
+}

@@ -1,0 +1,58 @@
+.switch {
+    display: inline-block;
+    position: relative;
+    border-radius: 5px;
+    border: 2px solid rgba(255 255 255 / 30%);
+    background-color: rgb(0 18 21);
+    overflow: hidden;
+    padding: 5px;
+    height: 60px;
+}
+
+.pointer {
+    display: block;
+    position: absolute;
+    background: #ab7484;
+    height: 100%;
+    transition: 150ms linear;
+    box-shadow: inset 4px 4px 6px rgba(0 0 0 / 30%);
+    z-index: 0;
+    border-radius: 5px;
+}
+
+.options {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    height: 100%;
+}
+
+.options > div {
+    display: inline-flex;
+    align-items: center;
+    padding: 0px 15px;
+    /* display: inline-block; */
+    /* position: relative; */
+    /* padding: 10px 15px; */
+    border-radius: 5px;
+    z-index: 1;
+    color: #ffffffa1;
+    cursor: default;
+    transition: 150ms linear;
+}
+
+.options > div:not(:last-child) {
+    margin-right: 5px;
+}
+
+.options > div:not(.active):hover {
+    cursor: pointer;
+    /* background-color: rgba(255 255 255 / 30%); */
+    color: white;
+}
+
+.options > div.active {
+    color: #ffffff;
+}

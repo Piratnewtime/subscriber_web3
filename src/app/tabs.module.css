@@ -1,0 +1,38 @@
+.tabs {
+
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+
+    height: 60px;
+    font-size: 20px;
+    font-weight: normal;
+    border-radius: 5px;
+    border: inset 1px rgba(255 255 255 / 30%);
+    color: rgba(255 255 255 / 70%);
+    transition: 250ms linear;
+
+    cursor: default;
+}
+
+.tab:not(.active):hover {
+    border: inset 1px rgba(255 255 255 / 80%);
+    color: rgba(255 255 255 / 100%);
+    cursor: pointer;
+}
+
+.tab:not(.active):active {
+    background-color: rgb(225 150 170 / 10%);
+}
+
+.tab.active {
+    background-color: rgb(225 150 170 / 70%);
+    border: unset;
+    border-right: inset 1px rgba(255 255 255 / 25%);
+    border-bottom: inset 1px rgba(255 255 255 / 25%);
+    box-shadow: inset 4px 4px 6px rgba(0 0 0 / 30%);
+}
