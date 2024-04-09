@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { WalletWrapper } from "./wallet";
+//import { WalletWrapper } from "./wallet";
+
+import dynamic from 'next/dynamic'
+ 
+const WalletWrapper = dynamic(() => import('./wallet'), { ssr: false });
 
 import WalletConnection from "./walletConnection";
 import { Box, Typography } from "@mui/material";

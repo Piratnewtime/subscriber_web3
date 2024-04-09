@@ -12,15 +12,15 @@ export interface ProviderWrapper {
 class Metamask implements ProviderWrapper {
 
     isInjected() {
-        return !!(window as any).ethereum?.isMetaMask;
+        return !!(globalThis.window as any)?.ethereum?.isMetaMask;
     }
 
     async getAccounts(): Promise<string[]> {
-        return (window as any).ethereum.request({ method: "eth_requestAccounts" });
+        return (globalThis.window as any)?.ethereum.request({ method: "eth_requestAccounts" });
     }
 
     async requestConnectedAccounts(): Promise<string[]> {
-        return (window as any).ethereum.request({ method: "eth_accounts" });
+        return (globalThis.window as any)?.ethereum.request({ method: "eth_accounts" });
     }
 
     async getAccount() {
@@ -51,7 +51,7 @@ class Metamask implements ProviderWrapper {
     // window.ethereum.networkVersion
 
     signAndSend(tx: { from?: string, to: string, data: string }) {
-        return (window as any).ethereum.request({
+        return (globalThis.window as any)?.ethereum.request({
             method: "eth_sendTransaction",
             // The following sends an EIP-1559 transaction. Legacy transactions are also supported.
             params: [

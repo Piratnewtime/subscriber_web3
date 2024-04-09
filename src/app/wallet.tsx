@@ -31,7 +31,7 @@ export const Wallet = createContext<WrappedData>({
 
 export const WalletContext = () => useContext(Wallet);
 
-export function WalletWrapper ({ children }: PropsWithChildren) {
+export default function WalletWrapper ({ children }: PropsWithChildren) {
   const [ isInit, setInit ] = useState<boolean>(false);
   const [ chainId, setChainId ] = useState<string>(networks[0].chainId);
   const [ network, setNetwork ] = useState<Network>(networks[0]);
