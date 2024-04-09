@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    //basePath: "/testnextjs",
+    basePath: "/subscriber_web3",
     crossOrigin: "anonymous",
     output: "export",
     reactStrictMode: true,
