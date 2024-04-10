@@ -24,37 +24,37 @@ export type Network = {
 }
 
 const networks: Network[] = [
-    {
-        name: 'Ethereum',
-        chainId: '1',
-        rpc: 'https://eth.llamarpc.com',
-        icon: '/networks/ethereum.png',
-        denom: 'ETH',
-        tokens: [
-            {
-                contract: '0xdac17f958d2ee523a2206206994597c13d831ec7',
-                name: 'Tether USD',
-                denom: 'USDT',
-                icon: '/tokens/usdt.png',
-                decimals: 6
-            },
-            {
-                contract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-                name: 'USDC',
-                denom: 'USDC',
-                icon: '/tokens/usdc.png',
-                decimals: 6
-            }
-        ],
-        links: {
-            address: 'https://etherscan.io/address/',
-            token: 'https://etherscan.io/token/',
-            tx: 'https://etherscan.io/tx/'
-        },
-        contract: '',
-        deployBlock: 0,
-        coingeckoId: 'ethereum'
-    },
+    // {
+    //     name: 'Ethereum',
+    //     chainId: '1',
+    //     rpc: 'https://eth.llamarpc.com',
+    //     icon: '/networks/ethereum.png',
+    //     denom: 'ETH',
+    //     tokens: [
+    //         {
+    //             contract: '0xdac17f958d2ee523a2206206994597c13d831ec7',
+    //             name: 'Tether USD',
+    //             denom: 'USDT',
+    //             icon: '/tokens/usdt.png',
+    //             decimals: 6
+    //         },
+    //         {
+    //             contract: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+    //             name: 'USDC',
+    //             denom: 'USDC',
+    //             icon: '/tokens/usdc.png',
+    //             decimals: 6
+    //         }
+    //     ],
+    //     links: {
+    //         address: 'https://etherscan.io/address/',
+    //         token: 'https://etherscan.io/token/',
+    //         tx: 'https://etherscan.io/tx/'
+    //     },
+    //     contract: '',
+    //     deployBlock: 0,
+    //     coingeckoId: 'ethereum'
+    // },
     {
         name: 'Binance Smart Chain',
         chainId: '56',
