@@ -21,9 +21,11 @@ import WarningRoundedIcon from '@mui/icons-material/WarningRounded';
 import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUncheckedRounded';
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CurrencyExchangeRoundedIcon from '@mui/icons-material/CurrencyExchangeRounded';
+import ScaleHandler from './scaleHandler';
 
 export default function DialogOrderInfo (props: DialogCommonProps & { order: OrderWithToken }) {
     const wallet = WalletContext();
+    const screen = ScaleHandler();
     const [ isProcessing, setProcessing ] = useState<boolean>(false);
     const [ allowance, setAllowance ] = useState<bigint>();
     const [ balance, setBalance ] = useState<bigint>();
@@ -126,11 +128,11 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
 
     if (wallet.account?.toLowerCase() === props.order.spender.toLowerCase()) {
         blocks.push(<DialogFormBlock label='Receiver'>
-            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold' }}>{props.order.receiver}</div>
+            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{props.order.receiver}</div>
         </DialogFormBlock>);
     } else {
         blocks.push(<DialogFormBlock label='Sender'>
-            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold' }}>{props.order.spender}</div>
+            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{props.order.spender}</div>
         </DialogFormBlock>);
     }
 
@@ -157,7 +159,7 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
                 </Stack>
             </Stack>
             <hr style={{ border: 'unset', borderBottom: '2px solid rgba(180 144 234 / 60%)' }} />
-            <Stack direction='row' justifyContent='space-between'>
+            <Stack direction={screen.isMobile ? 'column' : 'row'} justifyContent='space-between'>
                 <Box color='#B490EA' fontSize='15px' fontWeight='500'>{tokenInfo.name}</Box>
                 <Box color='#B490EA' fontSize='15px' fontWeight='500'>Fee: {totalFee.toString()} {tokenInfo.denom}</Box>
             </Stack>
@@ -176,7 +178,7 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
 
     if (props.order.memo) {
         blocks.push(<DialogFormBlock label='Memo'>
-            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '18px', fontWeight: 'bold' }}>{props.order.memo}</div>
+            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '18px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{props.order.memo}</div>
         </DialogFormBlock>);
     }
 

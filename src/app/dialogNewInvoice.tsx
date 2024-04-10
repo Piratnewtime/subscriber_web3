@@ -17,10 +17,12 @@ import { calcServiceFee, createErc20ApproveTx, createSubscribeTx, getErc20Allowa
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 import InventoryRoundedIcon from '@mui/icons-material/InventoryRounded';
+import ScaleHandler from './scaleHandler';
 
 export default function DialogNewInvoice (props: DialogCommonProps) {
     const wallet = WalletContext();
     const network = wallet.network;
+    const screen = ScaleHandler();
     
     const [ token, setToken ] = useState<string>('');
     const [ customToken, setCustomToken ] = useState<string>('');
@@ -226,7 +228,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
             </Stack>
             
             { isCustomTokenIncorrect ? <Error>Custom token is incorrect and token's data can't be fetched</Error> : '' }
-            <Stack direction='row' justifyContent='space-between' gap='10px'>
+            <Stack direction={screen.isMobile ? 'column' : 'row'} justifyContent='space-between' gap='10px'>
                 <Select
                     active={period}
                     list={periods.map(_ => {
@@ -259,7 +261,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
     </DialogFormBlock>);
 
     blocks.push(<DialogFormBlock label='Starts at'>
-        <Stack direction='row' justifyContent='space-between' gap='10px'>
+        <Stack direction={screen.isMobile ? 'column' : 'row'} justifyContent='space-between' gap='10px'>
             <Select
                 active={startsAt}
                 list={[

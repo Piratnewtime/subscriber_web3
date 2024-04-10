@@ -13,6 +13,7 @@ import NotificationImportantIcon from '@mui/icons-material/NotificationImportant
 import { Box, CircularProgress, Stack } from '@mui/material';
 
 import styles from './dialogTemplate.module.css';
+import ScaleHandler from './scaleHandler';
 
 const BootstrapDialog = styled(Dialog)(({ theme }) => ({
   '& .MuiDialog-paper': {
@@ -38,7 +39,7 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
     color: 'rgba(255 255 255 / 75%)',
     fontFamily: 'unset',
     padding: 'unset',
-    overflow: 'unset'
+    // overflow: 'unset'
   },
   '& .MuiDialogActions-root': {
     padding: 0,
@@ -59,10 +60,13 @@ type DialogTemplateProps = {
 } & DialogCommonProps
 
 export default function DialogTemplate (props: DialogTemplateProps) {
+  const screen = ScaleHandler();
+  
   return <BootstrapDialog
     onClose={props.handleClose}
     open={props.open}
-    scroll='body'
+    scroll={screen.isMobile ? 'paper' : 'body'}
+    fullScreen={screen.isMobile}
   >
     <DialogTitle sx={{ m: 0, p: 0 }}>{props.title}</DialogTitle>
     <IconButton
@@ -70,7 +74,7 @@ export default function DialogTemplate (props: DialogTemplateProps) {
       onClick={props.handleClose}
       sx={{
         position: 'absolute',
-        right: -45,
+        right: (screen.isMobile ? 15 : -45),
         top: 22,
         background: '#B490EA',
         color: '#001215',
@@ -210,13 +214,15 @@ export function InputCalendar (props: InputString) {
 }
 
 export function TimeTable (props: { timestamp: string, variant?: 'default' | 'warning' }) {
+  const screen = ScaleHandler();
+
   let className = styles.timetable;
   if (props.variant === 'warning') className += ' ' + styles.warning;
   
   // Tue Mar 26 2024 20:12
   const date = new Date(parseInt(props.timestamp) * 1000).toString();
   const parse = /^(\w+) (\w+) (\d+) (\d+) (\d+):(\d+)/.exec(date);
-  return <Stack direction='row' gap='20px' justifyContent='center' className={className}>
+  return <Stack direction={screen.isMobile ? 'column' : 'row'} gap='20px' justifyContent='center' alignItems='center' className={className}>
     <Stack direction='row' alignItems='center'>
         <span>{parse?.[4] ?? ''}</span>
         <span>{parse?.[2] ?? ''}</span>

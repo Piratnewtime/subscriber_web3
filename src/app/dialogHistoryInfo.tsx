@@ -23,9 +23,11 @@ import RadioButtonUncheckedRoundedIcon from '@mui/icons-material/RadioButtonUnch
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CurrencyExchangeRoundedIcon from '@mui/icons-material/CurrencyExchangeRounded';
 import { HistoryItem } from './ui';
+import ScaleHandler from './scaleHandler';
 
 export default function DialogHistoryInfo (props: DialogCommonProps & { historyItem: { order: OrderWithToken, item: HistoryItem } }) {
     const wallet = WalletContext();
+    const screen = ScaleHandler();
 
     const { order, item } = props.historyItem;
 
@@ -81,11 +83,11 @@ export default function DialogHistoryInfo (props: DialogCommonProps & { historyI
 
     if (wallet.account?.toLowerCase() === order.spender.toLowerCase()) {
         blocks.push(<DialogFormBlock label='Receiver'>
-            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold' }}>{order.receiver}</div>
+            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{order.receiver}</div>
         </DialogFormBlock>);
     } else {
         blocks.push(<DialogFormBlock label='Sender'>
-            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold' }}>{order.spender}</div>
+            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{order.spender}</div>
         </DialogFormBlock>);
     }
 
@@ -112,7 +114,7 @@ export default function DialogHistoryInfo (props: DialogCommonProps & { historyI
                     </Stack>
                 </Stack>
                 <hr style={{ border: 'unset', borderBottom: '2px solid rgba(180 144 234 / 60%)' }} />
-                <Stack direction='row' justifyContent='space-between'>
+                <Stack direction={screen.isMobile ? 'column' : 'row'} justifyContent='space-between'>
                     <Box color='#B490EA' fontSize='15px' fontWeight='500'>{tokenInfo.name}</Box>
                     <Box color='#B490EA' fontSize='15px' fontWeight='500'>Fee: {totalFee.toString()} {tokenInfo.denom}</Box>
                 </Stack>
@@ -141,7 +143,7 @@ export default function DialogHistoryInfo (props: DialogCommonProps & { historyI
 
     if (order.memo) {
         blocks.push(<DialogFormBlock label='Memo'>
-            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '18px', fontWeight: 'bold' }}>{order.memo}</div>
+            <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '18px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{order.memo}</div>
         </DialogFormBlock>);
     }
 

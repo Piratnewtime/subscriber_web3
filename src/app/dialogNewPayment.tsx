@@ -15,10 +15,12 @@ import periods from './periods';
 import { calcServiceFee, createErc20ApproveTx, createSubscribeTx, getErc20Allowance, getErc20BalanceOf, getErc20Decimals, getErc20Symbol, getExecutorCommission, getServiceCommission, waitForTransaction } from './contractInteractions';
 
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import ScaleHandler from './scaleHandler';
 
 export default function DialogNewPayment (props: DialogCommonProps) {
     const wallet = WalletContext();
     const network = wallet.network;
+    const screen = ScaleHandler();
     
     const [ receiver, setReceiver ] = useState<string>('');
     const [ isReceiverIncorrect, setReceiverIncorrect ] = useState<boolean>(false);
@@ -321,7 +323,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
             </Stack>
             
             { isCustomTokenIncorrect ? <Error>Custom token is incorrect and token's data can't be fetched</Error> : '' }
-            <Stack direction='row' justifyContent='space-between' gap='10px'>
+            <Stack direction={screen.isMobile ? 'column' : 'row'} justifyContent='space-between' gap='10px'>
                 <Select
                     active={period}
                     list={periods.map(_ => {
@@ -354,7 +356,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     </DialogFormBlock>);
 
     blocks.push(<DialogFormBlock label='Starts at'>
-        <Stack direction='row' justifyContent='space-between' gap='10px'>
+        <Stack direction={screen.isMobile ? 'column' : 'row'} justifyContent='space-between' gap='10px'>
             <Select
                 active={startsAt}
                 list={[

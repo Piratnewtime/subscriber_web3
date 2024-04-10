@@ -29,6 +29,7 @@ import PoolStack from "./poolStack";
 import axios from "axios";
 import DialogHistoryInfo from "./dialogHistoryInfo";
 import DialogNewInvoice from "./dialogNewInvoice";
+import ScaleHandler from "./scaleHandler";
 
 const delayTime = 60 * 60 * 6;
 
@@ -40,6 +41,7 @@ const h3Titles: { [key: string]: string } = {
 
 export default function Home() {
   const wallet = WalletContext();
+  const screen = ScaleHandler();
 
   const [ tab, setTab ] = useState<string>('payments');
   const [ listSwitch, setListSwitch ] = useState<string>('');
@@ -450,7 +452,7 @@ export default function Home() {
       {
         ['payments', 'incomingPayments'].includes(tab) ?
           <>
-            <Stack direction='row' justifyContent='space-between'>
+            <Stack direction={screen.isMobile ? 'column' : 'row'} gap='10px' justifyContent='space-between'>
               <Switch
                 value={listSwitch}
                 options={[
@@ -643,6 +645,7 @@ function HistoryList ({ tab, orders, history, total, isLoading }: HistoryListPro
 
 function ProcessingCenter () {
   const wallet = WalletContext();
+  const screen = ScaleHandler();
   const [ isLoading, setLoading ] = useState<boolean>(true);
   const [ limit, setLimit ] = useState<number>(0);
   const [ pool, setPool ] = useState<string[]>([]);
@@ -748,15 +751,15 @@ function ProcessingCenter () {
   return <>
     { isLoading ? <Box margin='20px 0px'><LinearProgress color="secondary" /></Box> : '' }
     <Stack direction='column' alignItems='center' gap='60px'>
-      <Stack direction='row' gap='40px'>
+      <Stack direction={screen.isMobile ? 'column' : 'row'} alignItems={screen.isMobile ? 'center' : 'flex-start'} gap='40px'>
         <Stack direction='column' gap='10px' style={{ fontSize: '24px', fontWeight: '300' }}>
           <div style={{ textAlign: 'center', fontWeight: '100', opacity: '0.8' }}>Pool</div>
           <div>
             <PoolStack level={limit ? Math.min((pool.length / limit) * 100, 100) : 0} />
           </div>
         </Stack>
-        <Stack direction='column' gap='10px' style={{ fontSize: '24px', fontWeight: '300' }}>
-          <div style={{ fontWeight: '100', opacity: '0.8' }}>Current state</div>
+        <Stack direction='column' gap='10px' alignItems='flex-start' style={{ fontSize: '24px', fontWeight: '300' }}>
+          <div style={{ fontWeight: '100', opacity: '0.8', alignSelf: (screen.isMobile ? 'center' : undefined) }}>Current state</div>
           <Stack direction='row' gap='5px'>
             <span>Pool:</span>
             <span>{pool.length} subscriptions</span>
@@ -773,7 +776,7 @@ function ProcessingCenter () {
           }
           {
             fee ?
-              <Stack direction='row' gap='5px'>
+              <Stack direction='row' flexWrap='wrap' gap='5px'>
                 <span>Tx fee:</span>
                 <span style={{ color: '#FF9900' }}>{fee} {wallet.network.denom}</span>
                 {
