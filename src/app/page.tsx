@@ -631,7 +631,7 @@ function HistoryList ({ tab, orders, history, total, isLoading }: HistoryListPro
             isLoading ?
               <><ChecklistRoundedIcon style={{ fontSize: '40px' }} /> Loading history...</>
             :
-              <><PlaylistRemoveRoundedIcon style={{ fontSize: '40px' }} /> Your history hasn't begun yet</>
+              <><PlaylistRemoveRoundedIcon style={{ fontSize: '40px' }} /> No history yet</>
           }
         </Stack>
       : ''
