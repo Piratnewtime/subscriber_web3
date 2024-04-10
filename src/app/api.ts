@@ -1,7 +1,7 @@
 import axios from 'axios';
-import { Network } from './networks';
+// import { Network } from './networks';
 
-const host = 'http://68.183.200.217:3333';
+const host = 'https://api.web3pay.online';
 
 export type EventSubsctiprion = {
   id: string
