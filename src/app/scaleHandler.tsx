@@ -7,7 +7,7 @@ export default function ScaleHandler () {
 
     useEffect(() => {
         const resize = () => {
-            setWidth(globalThis.window.screen.width);
+            setWidth(globalThis.window.innerWidth);
         }
         resize();
 

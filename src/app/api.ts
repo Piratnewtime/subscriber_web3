@@ -66,6 +66,7 @@ export function Processing (chainId: string) {
   return axios.get(`${host}/processing/${chainId}`).then(({ data }) => data) as Promise<{
     poolBlockNumber: string
     totalRewards: { [contract: string]: string }
+    expectedRewards: { [contract: string]: string }
     orders: string[]
     limit: number
   }>

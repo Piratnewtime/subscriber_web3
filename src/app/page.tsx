@@ -669,7 +669,12 @@ function ProcessingCenter () {
           const info = wallet.network.tokens.find(_ => _.contract.toLowerCase() === contract.toLowerCase());
           if (!info) continue;
           const amount = new BigNumber(res.totalRewards[contract]).div(10 ** info.decimals);
-          rewards.push(`${amount} ${info.denom}`);
+          if (res.expectedRewards[contract] != res.totalRewards[contract]) {
+            const expectedAmount = new BigNumber(res.expectedRewards[contract]).div(10 ** info.decimals);
+            rewards.push(`${expectedAmount} ... ${amount} ${info.denom}`);
+          } else {
+            rewards.push(`${amount} ${info.denom}`);
+          }
         }
         setRewards(rewards);
 
