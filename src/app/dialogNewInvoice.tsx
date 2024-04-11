@@ -173,6 +173,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
         const delayedStart = startsAt === 'now' ? '' : startsDatetime;
 
         const invoice = {
+            chainId: wallet.chainId,
             receiver: wallet.account,
             token: tokenAddress,
             amount,
