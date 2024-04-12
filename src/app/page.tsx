@@ -1,10 +1,7 @@
 'use client';
 
-import Image from "next/image";
-import styles from "./page.module.css";
 import { ReactNode, useCallback, useEffect, useState } from "react";
-import { Box, LinearProgress, Skeleton, Stack, Typography } from "@mui/material";
-import AddCircleIcon from '@mui/icons-material/AddCircle';
+import { Box, LinearProgress, Skeleton, Stack } from "@mui/material";
 import CurrencyExchangeRoundedIcon from '@mui/icons-material/CurrencyExchangeRounded';
 import ReceiptRoundedIcon from '@mui/icons-material/ReceiptRounded';
 import SyncProblemRoundedIcon from '@mui/icons-material/SyncProblemRounded';
@@ -16,7 +13,7 @@ import PlaylistRemoveRoundedIcon from '@mui/icons-material/PlaylistRemoveRounded
 import Tabs from "./tabs";
 import { HistoryItem, InnerButton, PaymentItem, ScheduleBlock, ScheduleHistoryBlock } from "./ui";
 import DialogNewPayment from "./dialogNewPayment";
-import { InitContract, Order, OrderWithToken, getBlockNumber, getCounter, getErc20Decimals, getErc20Name, getErc20Symbol, getExecutorCommission, getIncomes, getOrder, getOutcomes, getProvider, getServiceCommission, waitForTransaction } from "./contractInteractions";
+import { InitContract, ListenEvent, OrderWithToken, getCounter, getErc20Decimals, getErc20Name, getErc20Symbol, getExecutorCommission, getIncomes, getOrder, getOutcomes, getServiceCommission, waitForTransaction } from "./contractInteractions";
 import { WalletContext } from "./wallet";
 import DialogOrderInfo from "./dialogOrderInfo";
 import { ContractEventPayload, ethers } from "ethers";
@@ -220,40 +217,33 @@ export default function Home() {
     const hexAddress32 = ethers.zeroPadValue(wallet.account, 32);
 
     /** INCOMES */
-    const SubscriptionIncomeTopic = [
+    const incomes = ListenEvent(wallet.network, contract, [
       // Subscription (address indexed spender, address indexed receiver, uint id)
       ethers.id('Subscription(address,address,uint256)'),
       null,
       hexAddress32
-    ];
-    const SubscriptionIncomeClb = (event: ContractEventPayload) => {
+    ], (event: ContractEventPayload) => {
       console.log('Subscription Income', BigInt(event.log.data), event);
       setTotalIncomes(n => n + 1);
       addIncomeOrder(BigInt(event.log.data));
-    };
-    contract.on(SubscriptionIncomeTopic, SubscriptionIncomeClb);
-    console.log('Listen SubscriptionIncomeTopic', SubscriptionIncomeTopic);
+    });
 
     /** OUTCOMES */
-    const SubscriptionOutcomeTopic = [
+    const outcomes = ListenEvent(wallet.network, contract, [
       // Subscription (address indexed spender, address indexed receiver, uint id)
       ethers.id('Subscription(address,address,uint256)'),
       hexAddress32
-    ];
-    const SubscriptionOutcomeClb = (event: ContractEventPayload) => {
+    ], (event: ContractEventPayload) => {
       console.log('Subscription Outcome', BigInt(event.log.data), event);
       setTotalOutcomes(n => n + 1);
       addOutcomeOrder(BigInt(event.log.data));
-    };
-    contract.on(SubscriptionOutcomeTopic, SubscriptionOutcomeClb);
-    console.log('Listen SubscriptionOutcomeTopic', SubscriptionOutcomeTopic);
+    });
 
     /** CANCELLATION */
-    const CalcellationTopic = [
+    const cancellation = ListenEvent(wallet.network, contract, [
       // Cancellation (address indexed spender, address indexed receiver, uint id)
       ethers.id('Cancellation(address,address,uint256)')
-    ];
-    const CancellationClb = (event: ContractEventPayload) => {
+    ], (event: ContractEventPayload) => {
       const orderId = BigInt(event.log.data);
       console.log('Cancellation', orderId, event);
       if (event.log.topics[1] === hexAddress32) {
@@ -267,41 +257,36 @@ export default function Home() {
         setIncomes(arr => arr.filter(order => order.id !== orderId));
         setTotalIncomes(n => n - 1);
       }
-    };
-    contract.on(CalcellationTopic, CancellationClb);
-    console.log('Listen CalcellationTopic', CalcellationTopic);
+    });
 
     /** EXEC INCOMES */
-    const ExecIncomeTopic = [
+    const execIncomes = ListenEvent(wallet.network, contract, [
       // Execution (address indexed spender, address indexed receiver, uint id, uint serviceFee, uint executorFee)
       ethers.id('Execution(address,address,uint256,uint256,uint256)'),
       null,
       hexAddress32
-    ];
-    const ExecIncomeClb = (event: ContractEventPayload) => {
+    ], (event: ContractEventPayload) => {
       console.log('Execution Income', BigInt(event.log.data), event);
       addIncomeOrder(BigInt(event.log.data));
-    };
-    contract.on(ExecIncomeTopic, ExecIncomeClb);
-    console.log('Listen ExecIncomeTopic', ExecIncomeTopic);
+    });
 
     /** EXEC OUTCOMES */
-    const ExecOutcomeTopic = [
+    const execOutcomes = ListenEvent(wallet.network, contract, [
       // Execution (address indexed spender, address indexed receiver, uint id, uint serviceFee, uint executorFee)
       ethers.id('Execution(address,address,uint256,uint256,uint256)'),
       hexAddress32
-    ];
-    const ExecOutcomeClb = (event: ContractEventPayload) => {
+    ], (event: ContractEventPayload) => {
       console.log('Execution Outcome', BigInt(event.log.data), event);
       addOutcomeOrder(BigInt(event.log.data));
-    };
-    contract.on(ExecOutcomeTopic, ExecOutcomeClb);
-    console.log('Listen ExecOutcomeTopic', ExecOutcomeTopic);
+    });
 
     return () => {
-      contract.removeAllListeners().then(() => {
-        console.log('Remove ethers listeners', contract.listenerCount());
-      }).catch(console.error);
+      contract.removeAllListeners();
+      incomes.stop();
+      outcomes.stop();
+      cancellation.stop();
+      execIncomes.stop();
+      execOutcomes.stop();
     }
   }, [wallet, addOutcomeOrder, addIncomeOrder]);
 
@@ -426,7 +411,7 @@ export default function Home() {
         setLoadingInHistory(false);
       }
     })
-  }, [wallet, tab, listSwitch, isLoadingInHistory, isLoadingOutHistory, outcomesHistory, incomesHistory])
+  }, [wallet, tab, listSwitch, isLoadingInHistory, isLoadingOutHistory, outcomesHistory, incomesHistory]);
 
   useEffect(() => {
     if (!document.location.hash) return;
@@ -734,22 +719,17 @@ function ProcessingCenter () {
     const intervalId = setInterval(update, 60_000);
 
     const Contract = InitContract(wallet.network);
-    const ExecutionPoolTopic = [
+    const executionPool = ListenEvent(wallet.network, Contract, [
       // ExecutionPool (address indexed executor, uint execBlockNumber)
       ethers.id('ExecutionPool(address,uint)')
-    ];
-    const ExecutionPoolClb = (event: ContractEventPayload) => {
+    ], (event: ContractEventPayload) => {
       console.log('Execution pool event', event);
       update();
-    };
-    Contract.on(ExecutionPoolTopic, ExecutionPoolClb);
-    console.log('Listen ExecutionPoolTopic', ExecutionPoolTopic);
+    });
 
     return () => {
       clearInterval(intervalId);
-      Contract.removeAllListeners().then(() => {
-        console.log('Remove ethers listeners', Contract.listenerCount());
-      }).catch(console.error);
+      executionPool.stop();
     }
   }, [wallet]);
 

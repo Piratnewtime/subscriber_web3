@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Box, Button, Divider, LinearProgress, Stack, TableContainer, Paper, Table, TableHead, TableBody, TableRow, TableCell } from "@mui/material";
 
 import { WalletContext } from "../wallet";
-import { InitContract } from "../contractInteractions";
+import { InitContract, waitForTransaction } from "../contractInteractions";
 import BigNumber from "bignumber.js";
 import DialogEditToken from "./dialogEditToken";
 
@@ -93,6 +93,28 @@ export default function Page() {
       setLoading(false);
     });
   }, [wallet]);
+
+  const pauseContract = useCallback(async (active: boolean) => {
+    if (!wallet.isInit || !wallet.provider || isLoading) return;
+    setLoading(true);
+    const Contract = InitContract(wallet.network);
+    try {
+      const tx = await Contract[active ? 'pause' : 'unpause'].populateTransaction({ from: wallet.account });
+      try {
+          const txHash = await wallet.provider.signAndSend(tx);
+          try {
+              await waitForTransaction(wallet.network, txHash);
+          } catch (txError) {
+              console.error(txError);
+          }
+      } catch (signError) {
+          console.error(signError);
+      }
+    } catch (buildError) {
+      console.error(buildError);
+    }
+    setLoading(false);
+  }, [wallet, isLoading]);
   
   return <main>
     { isLoading ? <Box margin='20px 0px'><LinearProgress color="secondary" /></Box> : '' }
@@ -111,12 +133,12 @@ export default function Page() {
                 !paused ?
                   <>
                     <Box color='green'>Active</Box>
-                    <Button variant='contained' size='small' color='warning'>Pause</Button>
+                    <Button variant='contained' size='small' color='warning' onClick={() => pauseContract(true)}>Pause</Button>
                   </>
                 :
                   <>
                     <Box color='orange'>Paused</Box>
-                    <Button variant='contained' size='small' color='success'>Resume</Button>
+                    <Button variant='contained' size='small' color='success' onClick={() => pauseContract(false)}>Resume</Button>
                   </>
             }
           </Stack>

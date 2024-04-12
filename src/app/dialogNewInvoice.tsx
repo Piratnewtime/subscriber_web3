@@ -51,7 +51,6 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
             percent: commissions.service.percent,
             div: commissions.service.percentDiv
         });
-        console.log('serviceFee', decimals, serviceFee)
         setFee({
             processing: new BigNumber(commissions.processing).div(10 ** decimals).toString(),
             service: serviceFee.div(10 ** decimals).toString(),

@@ -58,7 +58,7 @@ const networks: Network[] = [
     {
         name: 'Binance Smart Chain',
         chainId: '56',
-        rpc: 'https://bsc-dataseed.bnbchain.org',// 'https://binance.llamarpc.com',
+        rpc: 'https://bsc-dataseed.bnbchain.org', // 'https://binance.llamarpc.com', //'https://public.stackup.sh/api/v1/node/bsc-mainnet',
         icon: '/networks/bnb-bnb-logo.svg',
         denom: 'BNB',
         tokens: [
@@ -82,8 +82,8 @@ const networks: Network[] = [
             token: 'https://bscscan.com/token/',
             tx: 'https://bscscan.com/tx/'
         },
-        contract: '0xf245a4396e23a1fde5c95a099a079cc513d63aee',
-        deployBlock: 37074005,
+        contract: '0x779951dfde8cdd31576c80dcca5478cb53f092f0',
+        deployBlock: 37803471,
         coingeckoId: 'binancecoin'
     }
 ];

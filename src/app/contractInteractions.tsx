@@ -1,18 +1,204 @@
-import { ethers } from "ethers";
+import { BaseContract, ContractEventPayload, EventFilter, JsonRpcProvider, Log, LogParams, Provider, TopicFilter, ethers } from "ethers";
+import axios from "axios";
 
 import { contractAbi } from "./contractAbi";
 import { erc20Abi } from "./erc20Abi";
 import { Network } from "./networks";
 import BigNumber from "bignumber.js";
 
+const providers = new Map<string, JsonRpcProvider>();
+
+export function GetProviderInstance (rpc: string) {
+    if (!providers.has(rpc)) {
+        providers.set(rpc, new ethers.JsonRpcProvider(rpc));
+    }
+    return providers.get(rpc)!;
+}
+
 export function InitErc20Contract (network: Network, token: string) {
-    const provider = new ethers.JsonRpcProvider(network.rpc);
+    const provider = GetProviderInstance(network.rpc);
     return new ethers.Contract(token, erc20Abi, provider);
 }
 
 export function InitContract (network: Network) {
-    const provider = new ethers.JsonRpcProvider(network.rpc);
+    const provider = GetProviderInstance(network.rpc);
     return new ethers.Contract(network.contract, contractAbi, provider);
+}
+
+type RawLog = {
+    address: string
+    topics: string[]
+    data: string
+    blockNumber: string
+    transactionHash: string
+    transactionIndex: string
+    blockHash: string
+    logIndex: string
+    removed: boolean
+}
+
+class EvmListener {
+    private provider: Provider;
+    private blockNumber: number = 0;
+    private lagLimit = 5;
+    private blockHandler: (blockNumber: number) => void;
+    private id: string = '';
+    private stopped: boolean = false;
+
+    constructor (
+        private network: Network,
+        private contract: BaseContract,
+        private topics: EventFilter | TopicFilter,
+        private clb: (ev: ContractEventPayload) => void
+    ) {
+        this.provider = contract.runner!.provider!;
+        this.blockHandler = (blockNumber: number) => {
+            if (this.blockNumber && blockNumber - this.blockNumber < this.lagLimit) {
+                this.next();
+                return;
+            }
+            this.requestUpdate().then(() => {
+                this.blockNumber = blockNumber;
+                if (this.stopped) return;
+                this.next();
+            });
+        };
+        this.next();
+    }
+
+    getLagLimit() {
+        return this.lagLimit;
+    }
+
+    setLagLimit(limit: number) {
+        this.lagLimit = limit;
+        return this;
+    }
+
+    createFilter() {
+        return axios.post(this.network.rpc, {
+            method: 'eth_newFilter',
+            params: [
+                {
+                    fromBlock: this.blockNumber ? 'latest' : '0x' + this.blockNumber.toString(16),
+                    toBlock: 'latest',
+                    address: 'address' in this.topics ? this.topics.address : this.network.contract,
+                    topics: 'address' in this.topics ? this.topics.topics : this.topics
+                }
+            ],
+            id: 1,
+            jsonrpc: '2.0'
+        }).then(({ data: { result, error } }) => ({ result, error })) as Promise<{ result?: string, error?: { message: string, code: number } }>;
+    }
+
+    async getId() {
+        if (this.id) return this.id;
+
+        do {
+            try {
+                const { result, error } = await this.createFilter();
+                if (this.stopped) return false;
+                if (error) {
+                    console.error('EvmListener node has a problem:', error);
+                    this.stopped = true;
+                    return false;
+                }
+                if (!result) {
+                    console.error('EvmListener returned empty result');
+                    this.stopped = true;
+                    return false;
+                }
+                this.id = result;
+            } catch (e) {
+                if (this.stopped) return false;
+                console.error('EvmListener start failed:', e);
+                await new Promise(tick => setTimeout(tick, 1000));
+                continue;
+            }
+            break;
+        } while (true);
+
+        return this.id;
+    }
+
+    async requestUpdate() {
+        do {
+            const id = await this.getId();
+            if (!id) return;
+            try {
+                const result = await axios.post(this.network.rpc, {
+                    //method: 'eth_getFilterLogs',
+                    method: 'eth_getFilterChanges',
+                    params: [ this.id ],
+                    id: 1,
+                    jsonrpc: '2.0'
+                }).then(({ data: { result, error } }) => ({ result, error })) as { result?: RawLog[], error?: { message: string, code: number } };
+
+                if (this.stopped) return;
+
+                if (result.error) {
+                    console.error('EvmListener update failed:', { id: this.id }, result.error);
+                    this.id = '';
+                    continue;
+                }
+
+                if (result.result) {
+                    result.result.map(ev => {
+                        const rawLog: LogParams = {
+                            ...ev,
+                            index: parseInt(ev.logIndex),
+                            blockNumber: parseInt(ev.blockNumber),
+                            transactionIndex: parseInt(ev.transactionIndex)
+                        };
+                        const log = new Log(rawLog, this.provider);
+                        const event = this.contract.getEvent(log.topics[0]);
+                        const payload = new ContractEventPayload(
+                            this.contract,
+                            null,
+                            event.name,
+                            event.getFragment(),
+                            log
+                        );
+                        return payload;
+                    }).forEach(this.clb);
+                }
+
+            } catch (error) {
+                if (this.stopped) return;
+                console.error('EvmListener update failed:', error);
+                await new Promise(tick => setTimeout(tick, 1000));
+                continue;
+            }
+            break;
+        } while (true);
+    }
+
+    next() {
+        this.stopped = false;
+        this.provider.once('block', this.blockHandler);
+    }
+
+    async stop() {
+        this.stopped = true;
+        if (this.blockHandler) {
+            await this.provider.off('block', this.blockHandler);
+        }
+        if (this.id) {
+            console.log('EvmListener drop id:', this.id);
+            await axios.post(this.network.rpc, {
+                method: 'eth_uninstallFilter',
+                params: [ this.id ],
+                id: 1,
+                jsonrpc: '2.0'
+            }).catch(console.error);
+            this.id = '';
+        }
+    }
+
+}
+
+export function ListenEvent (network: Network, contract: BaseContract, topics: EventFilter | TopicFilter, clb: (ev: ContractEventPayload) => void) {
+    return new EvmListener(network, contract, topics, clb);
 }
 
 // Erc20 standard contract
@@ -45,11 +231,11 @@ export async function createErc20ApproveTx (network: Network, token: string, own
 // Subscribe contract
 
 export function getProvider (network: Network) {
-    return new ethers.JsonRpcProvider(network.rpc);
+    return GetProviderInstance(network.rpc);
 }
 
 export function getBlockNumber (network: Network) {
-    const provider = new ethers.JsonRpcProvider(network.rpc);
+    const provider = GetProviderInstance(network.rpc);
     return provider.getBlockNumber();
 }
 
