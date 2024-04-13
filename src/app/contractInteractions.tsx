@@ -225,7 +225,7 @@ export function getErc20Allowance (network: Network, token: string, owner: strin
 
 export async function createErc20ApproveTx (network: Network, token: string, owner: string) {
     const contract = InitErc20Contract(network, token);
-    return await contract.approve.populateTransaction(network.contract, BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"), { from: owner });
+    return await contract.approve.populateTransaction(network.contract, BigInt("0x0000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffff"), { from: owner });
 }
 
 // Subscribe contract
