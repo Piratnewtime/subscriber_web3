@@ -43,7 +43,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
     const decimals = (customToken ? customTokenInfo?.decimals : verifyToken?.decimals) ?? 18;
     const denom = verifyToken?.denom ?? (customTokenInfo ? customTokenInfo.denom : '$TOKEN');
 
-    const updateFee = (value: string) => {
+    const updateFee = useCallback((value: string) => {
         if (commissions === null) return;
         const serviceFee = commissions.service.percentDiv == BigInt(0) ? new BigNumber(0) : calcServiceFee(new BigNumber(value).times(10 ** decimals), {
             min: commissions.service.min,
@@ -56,7 +56,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
             service: serviceFee.div(10 ** decimals).toString(),
             total: serviceFee.plus(commissions.processing).div(10 ** decimals).toString()
         });
-    };
+    }, [commissions]);
 
     const updateToken = useCallback((value: string) => {
         if (isReqTokenInfo) return;
@@ -152,7 +152,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
         const rightLength = Math.min(value.split('.')[1]?.length ?? 0, decimals);
         setAmount(bn.toFixed(rightLength));
         updateFee(bn.toFixed(rightLength));
-    }, [decimals]);
+    }, [updateFee, decimals]);
 
     useEffect(() => {
         if (!props.open || !wallet.isInit) return;
