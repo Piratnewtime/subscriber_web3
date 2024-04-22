@@ -49,18 +49,21 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
     }, [props.order, isMissed]);
 
     const approve = async () => {
+        if (!wallet.wallet?.accounts[0]) return;
         setProcessing(true);
         try {
-            const tx = await createErc20ApproveTx(wallet.network, props.order.token, wallet.account!);
+            const tx = await createErc20ApproveTx(wallet.network, props.order.token, wallet.wallet.accounts[0].address);
             try {
-                const txHash = await wallet.provider!.signAndSend(tx);
-                try {
-                    await waitForTransaction(wallet.network, txHash);
-                    const newAllowance = await getErc20Allowance(wallet.network, props.order.token, wallet.account!);
-                    console.log('New allowance', newAllowance);
-                    setAllowance(newAllowance);
-                } catch (txError) {
-                    console.error(txError);
+                const txHash = await wallet.sendTransaction(tx);
+                if (txHash) {
+                    try {
+                        await waitForTransaction(wallet.network, txHash);
+                        const newAllowance = await getErc20Allowance(wallet.network, props.order.token, wallet.wallet.accounts[0].address);
+                        console.log('New allowance', newAllowance);
+                        setAllowance(newAllowance);
+                    } catch (txError) {
+                        console.error(txError);
+                    }
                 }
             } catch (signError) {
                 console.error(signError);
@@ -72,16 +75,19 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
     };
 
     const execute = async () => {
+        if (!wallet.wallet?.accounts[0]) return;
         setProcessing(true);
         try {
-            const tx = await createExecuteTx(wallet.network, props.order.id, wallet.account!);
+            const tx = await createExecuteTx(wallet.network, props.order.id, wallet.wallet.accounts[0].address);
             try {
-                const txHash = await wallet.provider!.signAndSend(tx);
-                try {
-                    await waitForTransaction(wallet.network, txHash);
-                    props.handleClose();
-                } catch (txError) {
-                    console.error(txError);
+                const txHash = await wallet.sendTransaction(tx);
+                if (txHash) {
+                    try {
+                        await waitForTransaction(wallet.network, txHash);
+                        props.handleClose();
+                    } catch (txError) {
+                        console.error(txError);
+                    }
                 }
             } catch (signError) {
                 console.error(signError);
@@ -93,16 +99,19 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
     }
 
     const cancel = async () => {
+        if (!wallet.wallet?.accounts[0]) return;
         setProcessing(true);
         try {
-            const tx = await createCancelTx(wallet.network, props.order.id, wallet.account!);
+            const tx = await createCancelTx(wallet.network, props.order.id, wallet.wallet.accounts[0].address);
             try {
-                const txHash = await wallet.provider!.signAndSend(tx);
-                try {
-                    await waitForTransaction(wallet.network, txHash);
-                    props.handleClose();
-                } catch (txError) {
-                    console.error(txError);
+                const txHash = await wallet.sendTransaction(tx);
+                if (txHash) {
+                    try {
+                        await waitForTransaction(wallet.network, txHash);
+                        props.handleClose();
+                    } catch (txError) {
+                        console.error(txError);
+                    }
                 }
             } catch (signError) {
                 console.error(signError);
@@ -126,7 +135,7 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
         </DialogFormBlock>);
     }
 
-    if (wallet.account?.toLowerCase() === props.order.spender.toLowerCase()) {
+    if (wallet.wallet?.accounts[0]?.address.toLowerCase() === props.order.spender.toLowerCase()) {
         blocks.push(<DialogFormBlock label='Receiver'>
             <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{props.order.receiver}</div>
         </DialogFormBlock>);
@@ -197,7 +206,7 @@ export default function DialogOrderInfo (props: DialogCommonProps & { order: Ord
         handleClose={props.handleClose}
         content={blocks}
         actions={<>
-            { isMissed && allowance !== undefined && allowance < totalAmount && wallet.account?.toLowerCase() == props.order.spender.toLowerCase() ? <Button onClick={approve} disabled={isProcessing} loading={isProcessing}><CurrencyExchangeRoundedIcon style={{ fontSize: '20px', verticalAlign: 'bottom' }} /> Approve funds</Button> : '' }
+            { isMissed && allowance !== undefined && allowance < totalAmount && wallet.wallet?.accounts[0]?.address.toLowerCase() == props.order.spender.toLowerCase() ? <Button onClick={approve} disabled={isProcessing} loading={isProcessing}><CurrencyExchangeRoundedIcon style={{ fontSize: '20px', verticalAlign: 'bottom' }} /> Approve funds</Button> : '' }
             { isMissed && balance !== undefined && balance >= totalAmount ? <Button onClick={execute} disabled={isProcessing} loading={isProcessing}><PlayCircleOutlineIcon style={{ fontSize: '20px', verticalAlign: 'bottom' }} /> Execute payment</Button> : '' }
             { props.order.cancelledAt === BigInt(0) ? <Button variant='red' onClick={cancel} disabled={isProcessing} loading={isProcessing}><BackHandIcon style={{ fontSize: '20px', verticalAlign: 'bottom' }} /> Stop this subscription</Button> : '' }
         </>}

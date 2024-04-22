@@ -10,9 +10,8 @@ BigNumber.config({
     FORMAT: { prefix: '', decimalSeparator: '.', groupSeparator: '' }
 });
 import { WalletContext } from './wallet';
-import networks from './networks';
 import periods from './periods';
-import { calcServiceFee, createErc20ApproveTx, createSubscribeTx, getErc20Allowance, getErc20BalanceOf, getErc20Decimals, getErc20Symbol, getExecutorCommission, getServiceCommission, waitForTransaction } from './contractInteractions';
+import { GetProviderInstance, calcServiceFee, createErc20ApproveTx, createSubscribeTx, getErc20Allowance, getErc20BalanceOf, getErc20Decimals, getErc20Symbol, getExecutorCommission, getServiceCommission, waitForTransaction } from './contractInteractions';
 
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import ScaleHandler from './scaleHandler';
@@ -23,6 +22,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     const screen = ScaleHandler();
     
     const [ receiver, setReceiver ] = useState<string>('');
+    const [ receiverCheck, setReceiverCheck ] = useState<{ text: string, color: string }>();
     const [ isReceiverIncorrect, setReceiverIncorrect ] = useState<boolean>(false);
     const [ token, setToken ] = useState<string>('');
     const [ customToken, setCustomToken ] = useState<string>('');
@@ -57,10 +57,48 @@ export default function DialogNewPayment (props: DialogCommonProps) {
         setSubscribing(false);
     }, []);
 
-    const updateReceiver = useCallback((value: string) => {
+    const updateReceiver = useCallback(async (value: string) => {
         setReceiver(value);
-        setReceiverIncorrect(value !== '' && !ethers.isAddress(value));
-    }, []);
+        const isValid = value !== '' && ethers.isAddress(value);
+        setReceiverIncorrect(value !== '' && !isValid);
+        if (isValid) {
+            const provider = GetProviderInstance(network.rpc);
+            try {
+                const [
+                    code,
+                    transactions
+                ] = await Promise.all([
+                    provider.getCode(value),
+                    provider.getTransactionCount(value)
+                ]);
+                const isContract = !!code.replace('0x', '');
+                if (isContract) {
+                    setReceiverCheck({
+                        text: 'This is an address of a contract!',
+                        color: 'orange'
+                    })
+                    return;
+                } else if (!transactions) {
+                    setReceiverCheck({
+                        text: 'This is an empty address',
+                        color: 'orange'
+                    })
+                    return;
+                } else {
+                    setReceiverCheck({
+                        text: 'Address exists and correct',
+                        color: '#42cb42'
+                    })
+                    return;
+                }
+            } catch (e) {
+                console.error(e);
+                setReceiverCheck(undefined);
+            }
+        } else if (receiverCheck) {
+            setReceiverCheck(undefined);
+        }
+    }, [network, receiverCheck]);
 
     const updateFee = useCallback((value: string) => {
         if (commissions === null) return;
@@ -113,7 +151,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     }, [wallet, isReqTokenInfo, isSubscribing]);
     
     useEffect(() => {
-        if (!wallet.account) return;
+        if (!wallet.wallet?.accounts[0]) return;
         const tokenAddress = customToken || verifyToken?.contract;
         if (!tokenAddress) return;
         if (customToken && !customTokenInfo) return;
@@ -124,8 +162,8 @@ export default function DialogNewPayment (props: DialogCommonProps) {
         Promise.all([
             getExecutorCommission(network, tokenAddress),
             getServiceCommission(network, tokenAddress),
-            getErc20Allowance(network, tokenAddress, wallet.account),
-            getErc20BalanceOf(network, tokenAddress, wallet.account)
+            getErc20Allowance(network, tokenAddress, wallet.wallet.accounts[0].address),
+            getErc20BalanceOf(network, tokenAddress, wallet.wallet.accounts[0].address)
         ]).then(([ processingBn, service, allowance, balance ]) => {
             const processing = processingBn.toString();
             setCommissions({
@@ -183,7 +221,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     }, [props.open, wallet])
 
     useEffect(() => {
-        if (!wallet.isInit || !wallet.account) return;
+        if (!wallet.wallet?.accounts[0]) return;
         if (!document.location.hash) return;
         const hash = document.location.hash.slice(1);
         const [ key, value ] = hash.split('=');
@@ -215,21 +253,23 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     }, [wallet]);
 
     const approve = async () => {
-        if (!wallet.account || !wallet.provider) return;
+        if (!wallet.wallet?.accounts[0]) return;
         const tokenAddress = customToken || verifyToken?.contract;
         if (!tokenAddress) return;
         setApproving(true);
         try {
-            const tx = await createErc20ApproveTx(network, tokenAddress, wallet.account);
+            const tx = await createErc20ApproveTx(network, tokenAddress, wallet.wallet.accounts[0].address);
             try {
-                const txHash = await wallet.provider.signAndSend(tx);
-                try {
-                    await waitForTransaction(network, txHash);
-                    const newAllowance = await getErc20Allowance(network, tokenAddress, wallet.account);
-                    console.log('New allowance', newAllowance);
-                    setAllowance(newAllowance);
-                } catch (txError) {
-                    console.error(txError);
+                const txHash = await wallet.sendTransaction(tx);
+                if (txHash) {
+                    try {
+                        await waitForTransaction(network, txHash);
+                        const newAllowance = await getErc20Allowance(network, tokenAddress, wallet.wallet.accounts[0].address);
+                        console.log('New allowance', newAllowance);
+                        setAllowance(newAllowance);
+                    } catch (txError) {
+                        console.error(txError);
+                    }
                 }
             } catch (signError) {
                 console.error(signError);
@@ -241,7 +281,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     };
 
     const submit = async () => {
-        if (isSubscribing || !wallet.account || !wallet.provider) return;
+        if (isSubscribing || !wallet.wallet?.accounts[0]) return;
         const tokenAddress = customToken || verifyToken?.contract;
         if (!tokenAddress) return;
         const rawAmount = new BigNumber(amount).times(10 ** decimals).toFixed(0);
@@ -251,7 +291,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
 
         try {
             const tx = await createSubscribeTx(network, {
-                spender: wallet.account,
+                spender: wallet.wallet.accounts[0].address,
                 receiver,
                 token: tokenAddress,
                 amount: rawAmount,
@@ -260,15 +300,17 @@ export default function DialogNewPayment (props: DialogCommonProps) {
                 memo
             });
             try {
-                const txHash = await wallet.provider.signAndSend(tx);
-                try {
-                    await waitForTransaction(network, txHash);
-                    // update list of subscriptions
-                    // close modal
-                    resetValues();
-                    props.handleClose();
-                } catch (txError) {
-                    console.error(txError);
+                const txHash = await wallet.sendTransaction(tx);
+                if (txHash) {
+                    try {
+                        await waitForTransaction(network, txHash);
+                        // update list of subscriptions
+                        // close modal
+                        resetValues();
+                        props.handleClose();
+                    } catch (txError) {
+                        console.error(txError);
+                    }
                 }
             } catch (signError) {
                 console.error(signError);
@@ -285,6 +327,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     blocks.push(<DialogFormBlock label='Receiver'>
         <InputString value={receiver} onChange={updateReceiver} readOnly={isSubscribing} />
         { isReceiverIncorrect ? <Error>Incorrect address</Error> : '' }
+        { receiverCheck ? <Box color={receiverCheck.color}>{receiverCheck.text}</Box> : '' }
     </DialogFormBlock>);
 
     blocks.push(<DialogFormBlock label='Amount'>
@@ -310,7 +353,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
                     <div>
                     {
                         verifyToken ?
-                            <Link href={network.links.token + verifyToken.contract + (wallet.account ? '?a=' + wallet.account : '')}>Check the contract <LaunchIcon style={{ verticalAlign: 'middle', fontSize: '14px' }} /></Link>
+                            <Link href={network.links.token + verifyToken.contract + (wallet.wallet?.accounts[0] ? '?a=' + wallet.wallet.accounts[0].address : '')}>Check the contract <LaunchIcon style={{ verticalAlign: 'middle', fontSize: '14px' }} /></Link>
                         :
                             <InputString value={customToken} onChange={updateCustomToken} readOnly={isSubscribing} />
                     }
@@ -383,7 +426,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
 
     const isEnoughAllowance = parseFloat(amount) > 0 ? new BigNumber(allowance.toString()).div(10 ** decimals).gte(amount) : true;
 
-    let disabledSubmit = !wallet.account || !receiver || (token === '-' && !customTokenInfo) || amount == '' || new BigNumber(amount).isZero();
+    let disabledSubmit = !wallet.wallet?.accounts[0] || !receiver || (token === '-' && !customTokenInfo) || amount == '' || new BigNumber(amount).isZero();
 
     if (!isEnoughAllowance) {
         disabledSubmit = true;
@@ -395,7 +438,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
         blocks.push(<Alert severity="error">You don't have enough balance to execute your payment <b>now</b>.</Alert>);
     }
 
-    if (receiver.toLowerCase() === wallet.account?.toLowerCase()) {
+    if (receiver.toLowerCase() === wallet.wallet?.accounts[0]?.address.toLowerCase()) {
         disabledSubmit = true;
         blocks.push(<Alert severity="error">You cannot create a payment to yourself.</Alert>);
     }

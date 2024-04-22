@@ -52,20 +52,22 @@ export default function DialogEditToken (props: DialogCommonProps & TokenEditPro
   const [ isSavingServiceFee, setSavingServiceFee ] = useState<boolean>(false);
 
   const saveActiveStatus = useCallback(async (active: boolean) => {
-    if (!wallet.isInit || !wallet.provider || isSavingActive) return;
+    if (!wallet.isInit || !wallet.wallet?.accounts[0]?.address || isSavingActive) return;
     setSavingActive(true);
     const Contract = InitContract(wallet.network);
     try {
-      const tx = await Contract.setProcessingToken.populateTransaction(props.address, active, { from: wallet.account });
+      const tx = await Contract.setProcessingToken.populateTransaction(props.address, active, { from: wallet.wallet.accounts[0].address });
       try {
-          const txHash = await wallet.provider.signAndSend(tx);
+        const txHash = await wallet.sendTransaction(tx);
+        if (txHash) {
           try {
-              await waitForTransaction(wallet.network, txHash);
+            await waitForTransaction(wallet.network, txHash);
           } catch (txError) {
-              console.error(txError);
+            console.error(txError);
           }
+        }
       } catch (signError) {
-          console.error(signError);
+        console.error(signError);
       }
     } catch (buildError) {
       console.error(buildError);
@@ -94,21 +96,23 @@ export default function DialogEditToken (props: DialogCommonProps & TokenEditPro
   }, [props.decimals]);
 
   const saveExecutorFee = useCallback(async () => {
-    if (!wallet.isInit || !wallet.provider || isSavingExecutorFee || !executorFee) return;
+    if (!wallet.isInit || !wallet.wallet?.accounts[0]?.address || isSavingExecutorFee || !executorFee) return;
     setSavingExecutorFee(true);
     const Contract = InitContract(wallet.network);
     try {
       const value = new BigNumber(executorFee).times(10 ** props.decimals).toFixed(0);
-      const tx = await Contract.setExecutorCommissions.populateTransaction(props.address, value, { from: wallet.account });
+      const tx = await Contract.setExecutorCommissions.populateTransaction(props.address, value, { from: wallet.wallet.accounts[0].address });
       try {
-          const txHash = await wallet.provider.signAndSend(tx);
+        const txHash = await wallet.sendTransaction(tx);
+        if (txHash) {
           try {
-              await waitForTransaction(wallet.network, txHash);
+            await waitForTransaction(wallet.network, txHash);
           } catch (txError) {
-              console.error(txError);
+            console.error(txError);
           }
+        }
       } catch (signError) {
-          console.error(signError);
+        console.error(signError);
       }
     } catch (buildError) {
       console.error(buildError);
@@ -117,7 +121,7 @@ export default function DialogEditToken (props: DialogCommonProps & TokenEditPro
   }, [wallet, props.address, props.decimals, executorFee, isSavingExecutorFee]);
 
   const saveServiceFee = useCallback(async () => {
-    if (!wallet.isInit || !wallet.provider || isSavingServiceFee || !serviceFeeMin || !serviceFeeMax || !serviceFeePercent) return;
+    if (!wallet.isInit || !wallet.wallet?.accounts[0]?.address || isSavingServiceFee || !serviceFeeMin || !serviceFeeMax || !serviceFeePercent) return;
     setSavingServiceFee(true);
     const Contract = InitContract(wallet.network);
     try {
@@ -137,14 +141,16 @@ export default function DialogEditToken (props: DialogCommonProps & TokenEditPro
         max,
         percent,
         percentDiv,
-        { from: wallet.account }
+        { from: wallet.wallet.accounts[0].address }
       );
       try {
-        const txHash = await wallet.provider.signAndSend(tx);
-        try {
-          await waitForTransaction(wallet.network, txHash);
-        } catch (txError) {
-          console.error(txError);
+        const txHash = await wallet.sendTransaction(tx);
+        if (txHash) {
+          try {
+            await waitForTransaction(wallet.network, txHash);
+          } catch (txError) {
+            console.error(txError);
+          }
         }
       } catch (signError) {
         console.error(signError);

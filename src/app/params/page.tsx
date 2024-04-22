@@ -43,14 +43,14 @@ export default function Page() {
   }>();
 
   useEffect(() => {
-    if (!wallet.isInit || !wallet.network || !wallet.account) return;
+    if (!wallet.isInit || !wallet.network || !wallet.wallet?.accounts[0]?.address) return;
 
     (async () => {
       setLoading(true);
       const Contract = InitContract(wallet.network);
       const owner = (await Contract.owner()).toLowerCase();
       setOwner(owner);
-      if (owner !== wallet.account?.toLowerCase()) return;
+      if (owner !== wallet.wallet?.accounts[0]?.address.toLowerCase()) return;
 
       setPaused(await Contract.paused());
       setExecutionBlockNumber((await Contract.executionBlockNumber()).toString());
@@ -95,20 +95,22 @@ export default function Page() {
   }, [wallet]);
 
   const pauseContract = useCallback(async (active: boolean) => {
-    if (!wallet.isInit || !wallet.provider || isLoading) return;
+    if (!wallet.isInit || !wallet.wallet?.accounts[0]?.address || isLoading) return;
     setLoading(true);
     const Contract = InitContract(wallet.network);
     try {
-      const tx = await Contract[active ? 'pause' : 'unpause'].populateTransaction({ from: wallet.account });
+      const tx = await Contract[active ? 'pause' : 'unpause'].populateTransaction({ from: wallet.wallet.accounts[0].address });
       try {
-          const txHash = await wallet.provider.signAndSend(tx);
+        const txHash = await wallet.sendTransaction(tx);
+        if (txHash) {
           try {
-              await waitForTransaction(wallet.network, txHash);
+            await waitForTransaction(wallet.network, txHash);
           } catch (txError) {
-              console.error(txError);
+            console.error(txError);
           }
+        }
       } catch (signError) {
-          console.error(signError);
+        console.error(signError);
       }
     } catch (buildError) {
       console.error(buildError);
@@ -120,7 +122,7 @@ export default function Page() {
     { isLoading ? <Box margin='20px 0px'><LinearProgress color="secondary" /></Box> : '' }
     { error ? <Alert severity='error'>{error}</Alert> : '' }
     {
-      !wallet.account || owner !== wallet.account.toLowerCase() ?
+      !wallet.wallet?.accounts[0]?.address || owner !== wallet.wallet.accounts[0].address.toLowerCase() ?
         'Only admin can view this page, sorry 🤷'
       :
         <Stack direction='column' divider={<Divider variant='fullWidth' style={{ borderColor: 'pink' }} />} gap='10px'>

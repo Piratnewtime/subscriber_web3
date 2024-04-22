@@ -1,32 +1,78 @@
 'use client';
 
-import { PropsWithChildren, useState, useEffect, createContext, useContext, useCallback } from "react";
-
-import providers, { ProviderWrapper } from "./providers";
 import networks, { Network } from "./networks";
+import { PropsWithChildren, useState, useEffect, createContext, useContext, useCallback } from "react";
+import type { WalletState } from '@web3-onboard/core';
+import metamaskSDK from '@web3-onboard/metamask';
+import {
+  init,
+  useAccountCenter,
+  useConnectWallet,
+  useNotifications,
+  useSetChain,
+  useWallets,
+  useSetLocale
+} from '@web3-onboard/react';
+
+// initialize the module with options
+const metamaskSDKWallet = metamaskSDK({options: {
+  extensionOnly: false,
+  dappMetadata: {
+    name: 'Demo Web3Onboard'
+  }
+}})
+
+init({
+  // ... other Onboard options
+  accountCenter: {
+    desktop: {
+      enabled: true,
+      position: 'topRight'
+    },
+    mobile: {
+      enabled: true,
+      position: 'topRight'
+    }
+  },
+  connect: {
+    autoConnectAllPreviousWallet: true
+  },
+  wallets: [
+    metamaskSDKWallet,
+    //... other wallets
+    // Make sure to pass in before or above the injected-wallets module
+    //injectedWalletModule
+  ],
+  chains: [
+    {
+      namespace: 'evm',
+      id: 56
+    }
+  ]
+});
 
 type WrappedData = {
   isInit: boolean
   chainId: string
   network: Network
-  providerKey: string
-  provider: ProviderWrapper | null
-  account: string | null
+  connecting: boolean
+  wallet: WalletState | null
   setChainId: (value: string) => void
-  setProvider: (value: string) => void
+  setProvider: () => void
   disconnect: () => void
+  sendTransaction: (tx: any) => Promise<string | void>
 }
 
 export const Wallet = createContext<WrappedData>({
   isInit: false,
   chainId: networks[0].chainId,
   network: networks[0],
-  providerKey: '',
-  provider: null,
-  account: null,
+  connecting: false,
+  wallet: null,
   setChainId: () => {},
   setProvider: () => {},
-  disconnect: () => {}
+  disconnect: () => {},
+  sendTransaction: async () => {}
 });
 
 export const WalletContext = () => useContext(Wallet);
@@ -35,9 +81,8 @@ export default function WalletWrapper ({ children }: PropsWithChildren) {
   const [ isInit, setInit ] = useState<boolean>(false);
   const [ chainId, setChainId ] = useState<string>(networks[0].chainId);
   const [ network, setNetwork ] = useState<Network>(networks[0]);
-  const [ providerKey, setProviderKey ] = useState<string>('');
-  const [ provider, setProvider ] = useState<ProviderWrapper | null>(null);
-  const [ account, setAccount ] = useState<string | null>(null);
+  const [{ chains, connectedChain, settingChain }, setChain ] = useSetChain();
+  const [{ wallet, connecting }, connect, disconnectWeb3, updateBalances, setWalletModules] = useConnectWallet();
 
   const chooseChainId = useCallback((value: string) => {
     setChainId(value);
@@ -46,37 +91,29 @@ export default function WalletWrapper ({ children }: PropsWithChildren) {
     window.localStorage.setItem('chainId', value);
   }, []);
 
-  const chooseProvider = useCallback(async (value: string) => {
-    //setProvider(e.detail);
-    //window.localStorage.setItem('provider', e.detail);
-    console.log('Selected provider:', value);
-    const provider = providers.find(item => item.key === value);
-    if (!provider) {
-      console.warn(`Provider '${value}' doesn't exist.`);
-      return;
-    }
-    const instance = new provider.class();
-    if (!instance.isInjected()) {
-      console.warn(`Provider '${value}' isn't installed.`);
-      return;
-    }
-    try {
-      const address = await instance.getAccount();
-      console.log('Address', address);
-      setAccount(address);
-      setProviderKey(value);
-      window.localStorage.setItem('provider', value);
-      setProvider(instance);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  const chooseProvider = useCallback(() => connect(), []);
 
   const disconnect = useCallback(() => {
-    setAccount(null);
-    setProviderKey('');
-    window.localStorage.removeItem('provider');
-  }, []);
+    disconnectWeb3({ label: wallet!.label! });
+  }, [wallet]);
+
+  const sendTransaction = useCallback(async (tx: any) => {
+    if (!wallet) return;
+
+    const chainIdHex = '0x' + parseInt(chainId).toString(16);
+
+    if (connectedChain?.id !== chainIdHex) {
+      const changingChain = await setChain({ chainId: chainIdHex });
+      if (!changingChain) return;
+    }
+
+    return await wallet.provider.request({
+      method: "eth_sendTransaction",
+      params: [
+        tx
+      ],
+    }) as string;
+  }, [wallet, chainId, connectedChain]);
 
   useEffect(() => {
     const savedChainId = window.localStorage.getItem('chainId');
@@ -87,8 +124,6 @@ export default function WalletWrapper ({ children }: PropsWithChildren) {
         setNetwork(network);
       }
     }
-    const savedProvider = window.localStorage.getItem('provider');
-    if (savedProvider) chooseProvider(savedProvider);
     setInit(true);
   }, []);
 
@@ -96,11 +131,11 @@ export default function WalletWrapper ({ children }: PropsWithChildren) {
     isInit,
     chainId,
     network,
-    providerKey,
-    provider,
-    account,
+    connecting,
+    wallet,
     setChainId: chooseChainId,
     setProvider: chooseProvider,
-    disconnect
+    disconnect,
+    sendTransaction
   }}>{children}</Wallet.Provider>
 }

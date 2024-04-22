@@ -148,7 +148,7 @@ export default function Home() {
       cancelledAt: order.cancelledAt,
       tokenInfo: tokensInfo[order.token]
     };
-  }, [wallet]);
+  }, [wallet.network]);
 
   const checkHistoryOrder = useCallback(async (orderId: bigint) => {
     if (!historyOrders.find(order => order.id === orderId)) {
@@ -193,7 +193,7 @@ export default function Home() {
       newArr.sort((a, b) => parseInt(a.nextTime.toString()) - parseInt(b.nextTime.toString()));
       return newArr;
     });
-  }, [wallet, tokensInfo]);
+  }, [wallet.wallet?.accounts, outcomes, tokensInfo]);
 
   const addIncomeOrder = useCallback(async (orderId: bigint, missingTime: number = (Date.now() / 1000) - delayTime) => {
     const order = await loadOrder(orderId, missingTime);
@@ -208,13 +208,13 @@ export default function Home() {
       newArr.sort((a, b) => parseInt(a.nextTime.toString()) - parseInt(b.nextTime.toString()));
       return newArr;
     });
-  }, [wallet, tokensInfo]); 
+  }, [wallet.wallet?.accounts, incomes, tokensInfo]); 
 
   useEffect(() => {
-    if (!wallet.network || !wallet.account) return;
+    if (!wallet.network || !wallet.wallet?.accounts.length) return;
 
     const contract = InitContract(wallet.network);
-    const hexAddress32 = ethers.zeroPadValue(wallet.account, 32);
+    const hexAddress32 = ethers.zeroPadValue(wallet.wallet.accounts[0].address, 32);
 
     /** INCOMES */
     const incomes = ListenEvent(wallet.network, contract, [
@@ -288,11 +288,11 @@ export default function Home() {
       execIncomes.stop();
       execOutcomes.stop();
     }
-  }, [wallet, addOutcomeOrder, addIncomeOrder]);
+  }, [wallet.network, wallet.wallet?.accounts, addOutcomeOrder, addIncomeOrder]);
 
   useEffect(() => {
     if (!wallet.isInit) return;
-    if (!wallet.account) {
+    if (!wallet.wallet?.accounts.length) {
       setTotalOutcomes(0);
       setOutcomes([]);
       setTotalIncomes(0);
@@ -303,8 +303,9 @@ export default function Home() {
     setLoading(true);
     console.log('Loading orders');
     
-    getCounter(wallet.network, wallet.account).then(async (counter) => {
-      if (!wallet.account) {
+    getCounter(wallet.network, wallet.wallet.accounts[0].address).then(async (counter) => {
+      const address = wallet.wallet?.accounts[0]?.address;
+      if (!address) {
         setLoading(false);
         return [];
       }
@@ -315,7 +316,7 @@ export default function Home() {
 
       const idsOutcomePromises: Promise<bigint>[] = [];
       for (let index = BigInt(0); index < counter.outcomes; index++) {
-        idsOutcomePromises.push(getOutcomes(wallet.network, wallet.account, index.toString()));
+        idsOutcomePromises.push(getOutcomes(wallet.network, address, index.toString()));
       }
 
       const outcomeOrdersIds = await Promise.all(idsOutcomePromises);
@@ -326,7 +327,7 @@ export default function Home() {
 
       const idsIncomePromises: Promise<bigint>[] = [];
       for (let index = BigInt(0); index < counter.incomes; index++) {
-        idsIncomePromises.push(getIncomes(wallet.network, wallet.account, index.toString()));
+        idsIncomePromises.push(getIncomes(wallet.network, address, index.toString()));
       }
 
       const incomeOrdersIds = await Promise.all(idsIncomePromises);
@@ -346,14 +347,17 @@ export default function Home() {
       setOutcomes([]);
       setTotalIncomes(0);
       setIncomes([]);
+      setOutcomesHistory(undefined);
+      setIncomesHistory(undefined);
+      setHistoryOrders([]);
       setLoading(true);
     }
-  }, [wallet.isInit, wallet.network, wallet.account]);
+  }, [wallet.isInit, wallet.wallet?.accounts]);
 
   useEffect(() => {
     if (!['payments', 'incomingPayments'].includes(tab)) return;
     if (listSwitch !== 'history') return;
-    if (!wallet.chainId || !wallet.account) return;
+    if (!wallet.chainId || !wallet.wallet?.accounts.length) return;
     if (tab === 'payments') {
       if (isLoadingOutHistory || outcomesHistory) return;
       setLoadingOutHistory(true);
@@ -397,7 +401,7 @@ export default function Home() {
       } else {
         setIncomesHistory(list);
       }
-    })(wallet.chainId, wallet.account).then(() => {
+    })(wallet.chainId, wallet.wallet.accounts[0].address).then(() => {
       if (tab === 'payments') {
         setLoadingOutHistory(false);
       } else {
@@ -411,7 +415,7 @@ export default function Home() {
         setLoadingInHistory(false);
       }
     })
-  }, [wallet, tab, listSwitch, isLoadingInHistory, isLoadingOutHistory, outcomesHistory, incomesHistory]);
+  }, [wallet.isInit, wallet.wallet?.accounts, tab, listSwitch, isLoadingInHistory, isLoadingOutHistory, outcomesHistory, incomesHistory]);
 
   useEffect(() => {
     if (!document.location.hash) return;
@@ -663,9 +667,15 @@ function ProcessingCenter () {
         }
         setRewards(rewards);
 
+        if (!wallet.wallet?.accounts.length) {
+          setFee(undefined);
+          setFeeUsd(undefined);
+          return;
+        }
+
         const Contract = InitContract(wallet.network);
         const gasPrice = (await Contract.runner?.provider?.getFeeData())?.gasPrice || BigInt(0);
-        const gas = await Contract.ExecuteMany.estimateGas(res.poolBlockNumber, res.orders, { from: wallet.account });
+        const gas = await Contract.ExecuteMany.estimateGas(res.poolBlockNumber, res.orders, { from: wallet.wallet.accounts[0].address });
         const fee = new BigNumber(gas.toString()).times(gasPrice.toString()).div(1e18);
         setFee(fee.toString());
 
@@ -688,21 +698,23 @@ function ProcessingCenter () {
       console.error(e);
       setLoading(false);
     }
-  }, [wallet]);
+  }, [wallet.chainId, wallet.network, wallet.wallet?.accounts]);
 
   const execute = useCallback(async () => {
-    if (!wallet.isInit || !wallet.provider || !wallet.account) return;
+    if (!wallet.isInit || !wallet.wallet?.accounts.length) return;
     setExecuting(true);
     try {
       const Contract = InitContract(wallet.network);
-      const tx = await Contract.ExecuteMany.populateTransaction(poolBlockNumber, pool, { from: wallet.account });
+      const tx = await Contract.ExecuteMany.populateTransaction(poolBlockNumber, pool, { from: wallet.wallet.accounts[0].address });
       try {
-        const txHash = await wallet.provider.signAndSend(tx);
-        try {
-          await waitForTransaction(wallet.network, txHash);
-          update();
-        } catch (txError) {
-          console.error(txError);
+        const txHash = await wallet.sendTransaction(tx);
+        if (txHash) {
+          try {
+            await waitForTransaction(wallet.network, txHash);
+            update();
+          } catch (txError) {
+            console.error(txError);
+          }
         }
       } catch (signError) {
         console.error(signError);
@@ -731,7 +743,7 @@ function ProcessingCenter () {
       clearInterval(intervalId);
       executionPool.stop();
     }
-  }, [wallet]);
+  }, [wallet.isInit, wallet.network, wallet.wallet?.accounts]);
 
   return <>
     { isLoading ? <Box margin='20px 0px'><LinearProgress color="secondary" /></Box> : '' }

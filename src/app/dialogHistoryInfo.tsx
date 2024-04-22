@@ -81,7 +81,7 @@ export default function DialogHistoryInfo (props: DialogCommonProps & { historyI
         }
     }
 
-    if (wallet.account?.toLowerCase() === order.spender.toLowerCase()) {
+    if (wallet.wallet?.accounts[0]?.address.toLowerCase() === order.spender.toLowerCase()) {
         blocks.push(<DialogFormBlock label='Receiver'>
             <div style={{ color: 'rgba(225 153 170 / 100%)', fontSize: '15px', fontWeight: 'bold', overflowWrap: 'anywhere' }}>{order.receiver}</div>
         </DialogFormBlock>);

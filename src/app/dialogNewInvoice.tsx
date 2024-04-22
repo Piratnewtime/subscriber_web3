@@ -93,7 +93,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
     }, [wallet, isReqTokenInfo]);
     
     useEffect(() => {
-        if (!wallet.account) return;
+        if (!wallet.wallet?.accounts[0]) return;
         const tokenAddress = customToken || verifyToken?.contract;
         if (!tokenAddress) return;
         if (customToken && !customTokenInfo) return;
@@ -103,8 +103,8 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
         Promise.all([
             getExecutorCommission(network, tokenAddress),
             getServiceCommission(network, tokenAddress),
-            getErc20Allowance(network, tokenAddress, wallet.account),
-            getErc20BalanceOf(network, tokenAddress, wallet.account)
+            getErc20Allowance(network, tokenAddress, wallet.wallet.accounts[0].address),
+            getErc20BalanceOf(network, tokenAddress, wallet.wallet.accounts[0].address)
         ]).then(([ processingBn, service, allowance, balance ]) => {
             const processing = processingBn.toString();
             setCommissions({
@@ -166,14 +166,14 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
     }, [invoiceLink]);
 
     const submit = async () => {
-        if (!wallet.account || !wallet.provider) return;
+        if (!wallet.wallet?.accounts[0]) return;
         const tokenAddress = customToken || verifyToken?.contract;
         if (!tokenAddress) return;
         const delayedStart = startsAt === 'now' ? '' : startsDatetime;
 
         const invoice = {
             chainId: wallet.chainId,
-            receiver: wallet.account,
+            receiver: wallet.wallet.accounts[0].address,
             token: tokenAddress,
             amount,
             period,
@@ -192,7 +192,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
     const blocks: ReactNode[] = [];
 
     blocks.push(<DialogFormBlock label='Receiver'>
-        <InputString value={wallet.account ?? ''} readOnly={true} />
+        <InputString value={wallet.wallet?.accounts[0]?.address ?? ''} readOnly={true} />
     </DialogFormBlock>);
 
     blocks.push(<DialogFormBlock label='Amount'>
@@ -218,7 +218,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
                     <div>
                     {
                         verifyToken ?
-                            <Link href={network.links.token + verifyToken.contract + (wallet.account ? '?a=' + wallet.account : '')}>Check the contract <LaunchIcon style={{ verticalAlign: 'middle', fontSize: '14px' }} /></Link>
+                            <Link href={network.links.token + verifyToken.contract + (wallet.wallet?.accounts[0]?.address ? '?a=' + wallet.wallet.accounts[0].address : '')}>Check the contract <LaunchIcon style={{ verticalAlign: 'middle', fontSize: '14px' }} /></Link>
                         :
                             <InputString onChange={updateCustomToken} />
                     }
@@ -282,7 +282,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
         blocks.push(<Alert severity="info">We will not process your own token automatically, but you can do it directly.</Alert>);
     }
 
-    let disabledSubmit = !wallet.account || (token === '-' && !customTokenInfo) || amount == '' || new BigNumber(amount).isZero();
+    let disabledSubmit = !wallet.wallet?.accounts[0]?.address || (token === '-' && !customTokenInfo) || amount == '' || new BigNumber(amount).isZero();
 
     if (invoiceLink) {
         blocks.push(<Alert severity="success">Invoice link has been copied to your clipboard <InventoryRoundedIcon style={{ fontSize: '18px', verticalAlign: 'top' }} /></Alert>);

@@ -35,6 +35,9 @@
   --callout-border-rgb: 108, 108, 108;
   --card-rgb: 100, 100, 100;
   --card-border-rgb: 200, 200, 200;
+
+  --account-center-z-index: 10;
+  --notify-onboard-z-index: 10;
 }
 
 /* @media (prefers-color-scheme: dark) {

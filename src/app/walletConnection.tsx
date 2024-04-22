@@ -1,6 +1,6 @@
 'use client';
 
-import { DropdownSelect } from "./ui";
+import { DropdownBtn, DropdownSelect } from "./ui";
 import { WalletContext } from "./wallet";
 import { Box, Stack } from "@mui/material";
 
@@ -8,7 +8,6 @@ import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceW
 
 import stylesUi from './ui.module.css';
 import networks from "./networks";
-import providers from "./providers";
 import ScaleHandler from "./scaleHandler";
 import { ReactNode } from "react";
 
@@ -27,15 +26,16 @@ export default function WalletConnection () {
     } align='right' />
 
     let SelectAccount: ReactNode = <></>;
-    if (walletContext.account) {
+    if (walletContext.wallet && walletContext.wallet.accounts.length) {
+        const { address } = walletContext.wallet.accounts[0];
         SelectAccount = <DropdownSelect 
             onSelect={(key: string) => {
                 if (key === 'disconnect') {
                     walletContext.disconnect();
                 }
             }} 
-            placeholder={<Stack direction='row' gap='10px' alignItems='center'><span className={stylesUi.icon} style={{ backgroundImage: `url(${providers.find(item => item.key === walletContext.providerKey)!.icon})` }}></span><span>{walletContext.account.slice(0, 8) + '...' + walletContext.account.slice(-8)}</span></Stack>} 
-            activeValue={'wallet_' + walletContext.account} 
+            placeholder={<Stack direction='row' gap='10px' alignItems='center'><span className={stylesUi.icon} style={{ backgroundImage: `url(data:image/svg+xml;utf8,${encodeURIComponent(walletContext.wallet.icon)})` }}></span><span>{address.slice(0, 8) + '...' + address.slice(-8)}</span></Stack>} 
+            activeValue={'wallet_' + address} 
             select={[
                 // {
                 //     text: 'Change account',
@@ -49,22 +49,9 @@ export default function WalletConnection () {
             align={screen.isMobile ? 'right' : 'left'}
         />
     } else {
-        SelectAccount = <DropdownSelect 
-            onSelect={walletContext.setProvider} 
-            placeholder={<Stack direction='row' gap='10px' alignItems='center'><AccountBalanceWalletRoundedIcon /><span>Connect wallet</span></Stack>} 
-            activeValue={walletContext.providerKey} 
-            select={
-                providers.map(item => {
-                    const isInjected = new item.class().isInjected();
-                    return {
-                        icon: item.icon,
-                        text: isInjected ? item.name : <>{item.name} <span style={{ color: '#630000', fontWeight: '300', fontSize: '10px', verticalAlign: 'middle' }}>NOT INSTALLED</span></>,
-                        value: item.key,
-                        disabled: !isInjected
-                    }
-                })
-            }
-            align={screen.isMobile ? 'right' : 'left'}
+        SelectAccount = <DropdownBtn
+            onClick={walletContext.setProvider} 
+            placeholder={<Stack direction='row' gap='10px' alignItems='center'><AccountBalanceWalletRoundedIcon /><span>Connect wallet</span></Stack>}
         />
     }
 

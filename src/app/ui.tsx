@@ -86,6 +86,26 @@ export function DropdownSelect (props: {
     )
 }
 
+export function DropdownBtn (props: {
+    onClick: () => void
+    placeholder: string | ReactNode
+}) {
+    return (
+        <div className={styles.dropdownSelect}>
+            <div className={styles.btn} onClick={props.onClick}>
+                <Stack direction='row' alignItems='center'>
+                    {
+                        typeof props.placeholder === 'string' ?
+                            props.placeholder
+                        :
+                            props.placeholder
+                    }
+                </Stack>
+            </div>
+        </div>
+    )
+}
+
 function DropdownSelectItem (props: DropdownSelectItem & { selected?: boolean, selectHandler?: (value: string) => void }) {
     let classNames = '';
     if (props.selected) classNames += styles.selected;
