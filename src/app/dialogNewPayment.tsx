@@ -221,7 +221,15 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     }, [props.open, wallet])
 
     useEffect(() => {
-        if (!wallet.wallet?.accounts[0]) return;
+        if (!props.open || !wallet.isInit) {
+            console.log('A', props.open, wallet.isInit);
+            return;
+        }
+        console.log('B');
+        if (!wallet.wallet?.accounts[0]) {
+            wallet.setProvider();
+            return;
+        }
         if (!document.location.hash) return;
         const hash = document.location.hash.slice(1);
         const [ key, value ] = hash.split('=');
@@ -250,7 +258,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
             console.error(e);
         }
         document.location.hash = '';
-    }, [wallet]);
+    }, [props.open, wallet]);
 
     const approve = async () => {
         if (!wallet.wallet?.accounts[0]) return;

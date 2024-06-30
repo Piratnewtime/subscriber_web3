@@ -9,6 +9,11 @@ import ProductionQuantityLimitsRoundedIcon from '@mui/icons-material/ProductionQ
 import PlayCircleOutlineRoundedIcon from '@mui/icons-material/PlayCircleOutlineRounded';
 import ChecklistRoundedIcon from '@mui/icons-material/ChecklistRounded';
 import PlaylistRemoveRoundedIcon from '@mui/icons-material/PlaylistRemoveRounded';
+import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
+import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
+import PointOfSaleRoundedIcon from '@mui/icons-material/PointOfSaleRounded';
+import NewReleasesRoundedIcon from '@mui/icons-material/NewReleasesRounded';
+import ArrowUpwardRoundedIcon from '@mui/icons-material/ArrowUpwardRounded';
 
 import Tabs from "./tabs";
 import { HistoryItem, InnerButton, PaymentItem, ScheduleBlock, ScheduleHistoryBlock } from "./ui";
@@ -439,7 +444,7 @@ export default function Home() {
         <Tabs active={tab} setTab={setTab} />
       </Box>
       {
-        ['payments', 'incomingPayments'].includes(tab) ?
+        wallet.wallet?.accounts.length && ['payments', 'incomingPayments'].includes(tab) ?
           <>
             <Stack direction={screen.isMobile ? 'column' : 'row'} gap='10px' justifyContent='space-between'>
               <Switch
@@ -466,7 +471,9 @@ export default function Home() {
                 <DialogNewInvoice open={openCreateDialog} handleClose={() => setOpenCreateDialog(false)} />
             }
           </>
-        : ''
+        : <>
+          <DialogNewPayment open={openCreateDialog} handleClose={() => setOpenCreateDialog(false)} />
+        </>
       }
       {
         ['payments', 'incomingPayments'].includes(tab) ?
@@ -500,6 +507,7 @@ type OrderListProps = {
 }
 
 function OrderList ({ tab, orders, total, isLoading }: OrderListProps) {
+  const wallet = WalletContext();
   const [ selectedOrder, selectOrder ] = useState<OrderWithToken>();
 
   const blocks: {
@@ -543,7 +551,9 @@ function OrderList ({ tab, orders, total, isLoading }: OrderListProps) {
             color: '#ffffff9e'
           }}>
           {
-            tab === 'payments' ?
+            !wallet.wallet?.accounts.length ?
+              <><ArrowUpwardRoundedIcon style={{ fontSize: '40px' }} /> Please, connect your wallet</>
+            : tab === 'payments' ?
               <><SyncProblemRoundedIcon style={{ fontSize: '40px' }} /> You don't have any recurring payments</>
             :
               <><ProductionQuantityLimitsRoundedIcon style={{ fontSize: '40px' }} /> There are no incoming payments</>
@@ -569,6 +579,7 @@ type HistoryListProps = {
 }
 
 function HistoryList ({ tab, orders, history, total, isLoading }: HistoryListProps) {
+  const wallet = WalletContext();
   const [ selectedOrder, selectOrder ] = useState<{ order: OrderWithToken, item: HistoryItem }>();
 
   const blocks: {
@@ -617,7 +628,9 @@ function HistoryList ({ tab, orders, history, total, isLoading }: HistoryListPro
             color: '#ffffff9e'
           }}>
           {
-            isLoading ?
+            !wallet.wallet?.accounts.length ?
+              <><ArrowUpwardRoundedIcon style={{ fontSize: '40px' }} /> Please, connect your wallet</>
+            : isLoading ?
               <><ChecklistRoundedIcon style={{ fontSize: '40px' }} /> Loading history...</>
             :
               <><PlaylistRemoveRoundedIcon style={{ fontSize: '40px' }} /> No history yet</>
@@ -745,6 +758,8 @@ function ProcessingCenter () {
     }
   }, [wallet.isInit, wallet.network, wallet.wallet?.accounts]);
 
+  const level = limit ? Math.min((pool.length / limit) * 100, 100) : 0;
+
   return <>
     { isLoading ? <Box margin='20px 0px'><LinearProgress color="secondary" /></Box> : '' }
     <Stack direction='column' alignItems='center' gap='60px'>
@@ -752,14 +767,24 @@ function ProcessingCenter () {
         <Stack direction='column' gap='10px' style={{ fontSize: '24px', fontWeight: '300' }}>
           <div style={{ textAlign: 'center', fontWeight: '100', opacity: '0.8' }}>Pool</div>
           <div>
-            <PoolStack level={limit ? Math.min((pool.length / limit) * 100, 100) : 0} />
+            <PoolStack level={level} />
           </div>
         </Stack>
         <Stack direction='column' gap='10px' alignItems='flex-start' style={{ fontSize: '24px', fontWeight: '300' }}>
           <div style={{ fontWeight: '100', opacity: '0.8', alignSelf: (screen.isMobile ? 'center' : undefined) }}>Current state</div>
+          {
+            level === 0 ?
+              <Stack direction='row' alignItems='center' justifyContent='center' gap='5px' style={{ color: '#4cd14c', textShadow: '0 0 10px #bdbdbd' }}><VerifiedRoundedIcon /> Perfect</Stack>
+            : level <= 20 ?
+              <Stack direction='row' alignItems='center' justifyContent='center' gap='5px' style={{ color: '#93bd19', textShadow: '0 0 10px #bdbdbd' }}><CheckCircleOutlineRoundedIcon /> Good</Stack>
+            : level <= 70 ?
+              <Stack direction='row' alignItems='center' justifyContent='center' gap='5px' style={{ color: '#c79606', textShadow: '0 0 10px #bdbdbd' }}><PointOfSaleRoundedIcon /> It's time for money!</Stack>
+            :
+              <Stack direction='row' alignItems='center' justifyContent='center' gap='5px' style={{ color: '#ff2600', textShadow: '0 0 10px #bdbdbd' }}><NewReleasesRoundedIcon /> It's time for money!!!</Stack>
+          }
           <Stack direction='row' gap='5px'>
             <span>Pool:</span>
-            <span>{pool.length} subscriptions</span>
+            <span>{pool.length} tasks</span>
           </Stack>
           {
             rewards?.length ?
@@ -772,19 +797,23 @@ function ProcessingCenter () {
             : ''
           }
           {
-            fee ?
-              <Stack direction='row' flexWrap='wrap' gap='5px'>
-                <span>Tx fee:</span>
-                <span style={{ color: '#FF9900' }}>{fee} {wallet.network.denom}</span>
-                {
-                  feeUsd ? <span style={{ color: '#FF9900' }}>(${feeUsd})</span> : ''
-                }
-              </Stack>
-            : ''
+            wallet.wallet?.accounts.length && pool.length ? <>
+              {
+                fee ?
+                  <Stack direction='row' flexWrap='wrap' gap='5px'>
+                    <span>Tx fee:</span>
+                    <span style={{ color: '#FF9900' }}>{fee} {wallet.network.denom}</span>
+                    {
+                      feeUsd ? <span style={{ color: '#FF9900' }}>(${feeUsd})</span> : ''
+                    }
+                  </Stack>
+                : ''
+              }
+              <div style={{ paddingTop: '25px' }}>
+                <Button onClick={execute} loading={isExecuting} disabled={isLoading || !pool.length || isExecuting}><PlayCircleOutlineRoundedIcon style={{ fontSize: '20px', verticalAlign: 'bottom' }} /> Execute payments & earn money</Button>
+              </div>
+            </> : ''
           }
-          <div style={{ paddingTop: '25px' }}>
-            <Button onClick={execute} loading={isExecuting} disabled={isLoading || !pool.length || isExecuting}><PlayCircleOutlineRoundedIcon style={{ fontSize: '20px', verticalAlign: 'bottom' }} /> Execute payments & earn money</Button>
-          </div>
         </Stack>
       </Stack>
     </Stack>

@@ -93,7 +93,11 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
     }, [wallet, isReqTokenInfo]);
     
     useEffect(() => {
-        if (!wallet.wallet?.accounts[0]) return;
+        if (!props.open || !wallet.isInit) return;
+        if (!wallet.wallet?.accounts[0]) {
+            wallet.setProvider();
+            return;
+        }
         const tokenAddress = customToken || verifyToken?.contract;
         if (!tokenAddress) return;
         if (customToken && !customTokenInfo) return;
@@ -129,7 +133,7 @@ export default function DialogNewInvoice (props: DialogCommonProps) {
             console.error(e);
             setLoadingCommissions(false);
         })
-    }, [wallet, network, token, verifyToken, customTokenInfo]);
+    }, [props.open, wallet, network, token, verifyToken, customTokenInfo]);
     
     const updateAmount = useCallback((value: string) => {
         if (value === '') {
