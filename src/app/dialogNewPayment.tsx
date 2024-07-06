@@ -221,11 +221,7 @@ export default function DialogNewPayment (props: DialogCommonProps) {
     }, [props.open, wallet])
 
     useEffect(() => {
-        if (!props.open || !wallet.isInit) {
-            console.log('A', props.open, wallet.isInit);
-            return;
-        }
-        console.log('B');
+        if (!props.open || !wallet.isInit) return;
         if (!wallet.wallet?.accounts[0]) {
             wallet.setProvider();
             return;

@@ -656,6 +656,7 @@ function ProcessingCenter () {
   const [ fee, setFee ] = useState<string>();
   const [ feeUsd, setFeeUsd ] = useState<string>();
   const [ isExecuting, setExecuting ] = useState<boolean>(false);
+  const [ nextTime, setNextTime ] = useState<Date>();
 
   const update = useCallback(async () => {
     setLoading(true);
@@ -664,6 +665,7 @@ function ProcessingCenter () {
       setLimit(res.limit);
       setPool(res.orders);
       setPoolBlockNumber(res.poolBlockNumber);
+      setNextTime(res.nextOrder ? new Date(res.nextOrder) : undefined);
 
       if (res.orders.length) {
         const rewards: string[] = [];
@@ -767,7 +769,7 @@ function ProcessingCenter () {
         <Stack direction='column' gap='10px' style={{ fontSize: '24px', fontWeight: '300' }}>
           <div style={{ textAlign: 'center', fontWeight: '100', opacity: '0.8' }}>Pool</div>
           <div>
-            <PoolStack level={level} />
+            <PoolStack level={level} nextTime={nextTime} />
           </div>
         </Stack>
         <Stack direction='column' gap='10px' alignItems='flex-start' style={{ fontSize: '24px', fontWeight: '300' }}>

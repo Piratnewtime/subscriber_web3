@@ -69,5 +69,6 @@ export function Processing (chainId: string) {
     expectedRewards: { [contract: string]: string }
     orders: string[]
     limit: number
+    nextOrder: string | null
   }>
 }

@@ -90,3 +90,26 @@
     right: -20px;
     top: 11px;
 }
+
+.awaiter {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.awaiter > div {
+    font-size: 15px;
+    line-height: 15px;
+    text-align: center;
+    background: #b490ea;
+    padding: 5px;
+    border-radius: 8px;
+    border: 1px solid #00000021;
+    color: black;
+    font-weight: 500;
+}
